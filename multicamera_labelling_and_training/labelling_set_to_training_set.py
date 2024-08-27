@@ -123,9 +123,14 @@ def get_image_size(image_path):
 def get_row_keypoints(row, keypoint):
     scorer = np.array(row.index)[0][0]
     entity = np.array(row.index)[0][1]
-    x = row[scorer][entity][keypoint]["x"]
-    y = row[scorer][entity][keypoint]["y"]
-    state = row[scorer][entity][keypoint]["state"]
+    if keypoint not in row[scorer][entity].index:
+        x = 0
+        y = 0
+        state = 0
+    else:
+        x = row[scorer][entity][keypoint]["x"]
+        y = row[scorer][entity][keypoint]["y"]
+        state = row[scorer][entity][keypoint]["state"]
     if np.isnan(x):
         x = 0
     if np.isnan(y):
