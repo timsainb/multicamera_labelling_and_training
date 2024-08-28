@@ -29,6 +29,8 @@ from pathlib import Path
 
 from mmengine.config import Config, DictAction
 from mmengine.runner import Runner
+from mmpose.registry import DATASETS
+from mmpose.datasets.datasets.base import BaseCocoStyleDataset
 
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"   # see issue #152
 os.environ["CUDA_VISIBLE_DEVICES"]="0"
@@ -41,9 +43,11 @@ dataset_directory = Path('{dataset_directory}')
 # which config to use (this is what we base the config off of). Should be in the mmdeteciton repo. 
 config_loc = Path('{config}')
 
+use_pretrained_model = False
 pretrained_model = '{pretrained_model}'
 if len(pretrained_model) > 0:
-    pretrained_model = Path(pretrained_model)
+    print(pretrained_model)
+    pretrained_model = Path('{pretrained_model}')
     use_pretrained_model = True
 
 # working directory (where model output is saved)
@@ -97,6 +101,14 @@ cfg.test_dataloader.dataset.ann_file = 'annotations/instances_val.json'
 cfg.test_dataloader.dataset.data_root = cfg.data_root
 cfg.test_dataloader.dataset.data_prefix = dict(img='val/')
 
+
+# this file contains info about the dataset (keypoints, skeleton, etc) needed for traiing
+dataset_info_loc =  Path("/n/groups/datta/tim_sainburg/projects/multicamera_airflow_pipeline/multicamera_airflow_pipeline/tim_240731/skeletons/sainburg25pt.py")
+
+@DATASETS.register_module()
+class CoCo25pt(BaseCocoStyleDataset):
+    METAINFO: dict = dict(from_file=dataset_info_loc)
+
 # set to custom datset
 cfg.train_dataloader.dataset.metainfo = dict(from_file=dataset_info_loc.as_posix())
 cfg.val_dataloader.dataset.metainfo = dict(from_file=dataset_info_loc.as_posix())
@@ -113,8 +125,12 @@ cfg.default_hooks.checkpoint.interval = {ckpt_interval}
 cfg.max_epochs = 2000
 cfg.train_cfg.max_epochs = 2000
 
+# bad case doesn't work with our version of mmpose for some reason
+def_hooks = cfg.get('default_hooks')
+cfg.default_hooks = {{k: v for k,v in def_hooks.items() if 'badcase' != k}}
+
 # set preprocess configs to model
-cfg.model.setdefault('data_preprocessor', cfg.get('preprocess_cfg', {}))
+cfg.model.setdefault('data_preprocessor', cfg.get('preprocess_cfg', {{}}))
 
 # save configuration file for future reference
 cfg.dump(working_directory / 'config.py')
@@ -130,7 +146,7 @@ runner.train()
 @click.argument('model_name', type=str)
 @click.argument('dataset_directory', type=str)
 @click.argument('config', type=str)
-@click.option('--pretrained_model', default=None, type=str)
+@click.option('--pretrained_model', default='', type=str)
 @click.option('--output_directory', default='.', type=str)
 @click.option('--ckpt_interval', default=50, type=int)
 @click.option('--mem', default=16, type=int)
@@ -148,6 +164,9 @@ def main(model_name, dataset_directory, config, pretrained_model, output_directo
         formatted_datetime = datetime.now().strftime("%y-%m-%d-%H-%M-%S"), 
         output_directory=output_directory,
         ckpt_interval=ckpt_interval)
+    
+    if not os.path.exists(pdir):
+        os.makedirs(pdir, exist_ok=True)
     
     with open(pdir + '/tmp_pose.py', 'w') as f:
         f.write(_py)
