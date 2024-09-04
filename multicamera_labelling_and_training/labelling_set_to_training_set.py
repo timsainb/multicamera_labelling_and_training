@@ -24,7 +24,7 @@ class TrainingSetCreator:
         trainingset_name,
         percent_validation=0.1,
         keypoints_order=None,
-        keypoints_to_ignore=["Tail_Tip", "Tail_Middle", "tail_tip"],
+        keypoints_to_ignore=[],
         padding=60,
     ):
         """Creates a COCO formatted training set from labelling sets
@@ -49,7 +49,7 @@ class TrainingSetCreator:
         self.percent_validation = percent_validation
         self.keypoints_order = keypoints_order
         self.keypoints_to_ignore = keypoints_to_ignore
-        self.padding = padding # padding around bounding box
+        self.padding = padding  # padding around bounding box
 
     def run(self, labelling_sets):
         dataset_dict, n_keypoints = initialize_jarvis_trainingset(
@@ -79,7 +79,7 @@ class TrainingSetCreator:
                 image_id,
                 annotation_id,
                 n_keypoints,
-                padding=self.padding
+                padding=self.padding,
             )
 
         # create framesets
@@ -296,11 +296,11 @@ def copy_images_to_dataset(
                     np.min(yvals),
                     np.max(yvals),
                 )
-                xmin = max([0, xmin-padding])
-                ymin = max([0, ymin-padding])
-                xmax = min([width, xmax+padding])
-                ymax = min([height, ymax+padding])
-                
+                xmin = max([0, xmin - padding])
+                ymin = max([0, ymin - padding])
+                xmax = min([width, xmax + padding])
+                ymax = min([height, ymax + padding])
+
                 area = (xmax - xmin) * (ymax - ymin)
                 bbox = [
                     float(xmin),
@@ -321,7 +321,7 @@ def copy_images_to_dataset(
                     "num_keypoints": n_keypoints,
                     "segmentation": [],
                 }
-                annotation_id+=1
+                annotation_id += 1
                 dataset_dict["annotations"].append(annotations_dict)
             image_id += 1
             # copy the image

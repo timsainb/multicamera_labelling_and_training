@@ -69,7 +69,7 @@ class LabellingSetCreator:
         temp_dir = Path(tempfile.mkdtemp())
 
         # remux videos
-        for video in tqdm(self.video_df.video_location, desc="remuxing videos"):
+        for video in tqdm(self.video_df.video_location, desc="remuxing videos", leave=False):
             output_video = temp_dir / video.name
             remux_command = f"ffmpeg -i {video} -c copy -y {output_video}"
             os.system(remux_command)
@@ -198,15 +198,19 @@ class LabellingSetCreator:
                 frame_to_grab_df.iterrows(),
                 total=len(frame_to_grab_df),
                 desc="grabbing images from video",
+                leave=False,
             )
         )
+
         logger.info("moving calibration directory")
         if self.calibration_directory is not None:
-            if (self.output_directory / dataset_name).exists() == False:
+            if (
+                self.output_directory / dataset_name / self.calibration_directory.name
+            ).exists() == False:
                 # copy the calibration file
                 shutil.copytree(
                     self.calibration_directory,
-                    self.output_directory / dataset_name,
+                    self.output_directory / dataset_name / self.calibration_directory.name,
                 )
             else:
                 logger.info("Calibration folder already exists")
